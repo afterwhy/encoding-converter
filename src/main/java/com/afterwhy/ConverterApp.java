@@ -7,7 +7,7 @@ import javafx.stage.Stage;
 /**
  * @author d.karasev
  */
-public class Main extends Application {
+public class ConverterApp extends Application {
     public static void main(String[] args) {
         launch(args);
     }

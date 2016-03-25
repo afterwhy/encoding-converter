@@ -1,0 +1,1 @@
+start "" "javaw" -jar encoding-converter-1.0.jar
