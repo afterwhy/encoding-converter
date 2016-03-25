@@ -169,10 +169,7 @@ public class MainView extends VBox {
             return;
         }
 
-        buttonBrowse.setDisable(true);
-        buttonProceed.setDisable(true);
-        textFieldMask.setDisable(true);
-        checkBoxBackup.setDisable(true);
+        updateAvailability(true);
 
         executor.execute(() -> {
             try {
@@ -197,14 +194,21 @@ public class MainView extends VBox {
                 });
             } finally {
                 Platform.runLater(() -> {
-                    buttonBrowse.setDisable(false);
-                    buttonProceed.setDisable(false);
-                    textFieldMask.setDisable(false);
-                    checkBoxBackup.setDisable(false);
+                    updateAvailability(false);
                     Platform.runLater(() -> buttonProceed.requestFocus());
                 });
             }
         });
+    }
+
+    private void updateAvailability(boolean value) {
+        comboBoxCharsets.setDisable(value);
+        buttonBrowse.setDisable(value);
+        buttonProceed.setDisable(value);
+        textFieldMask.setDisable(value);
+        checkBoxBackup.setDisable(value);
+        radioButtonFile.setDisable(value);
+        radioButtonFolder.setDisable(value);
     }
 
     private void convertFolder(File folder) throws IOException {
