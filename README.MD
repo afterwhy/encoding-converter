@@ -1,6 +1,6 @@
 # Encoding converter
 
-Simple JavaFX-based util to convert folder full of text files to target encoding.
+Simple JavaFX-based util to convert text files to target encoding.
 
 ## Prerequisites
 
@@ -13,7 +13,7 @@ Make sure you have correct environment variables **JAVA_HOME** and **M2_HOME**.
 To run program execute following command.
 
  ```mvn
- mvn exec:java
+ mvn compile exec:java
  ```
 
 ## Binary distribution

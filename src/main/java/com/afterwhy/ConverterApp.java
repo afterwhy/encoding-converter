@@ -15,6 +15,7 @@ public class ConverterApp extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         primaryStage.setScene(new Scene(new MainView(primaryStage), null));
+        primaryStage.setTitle("Encoding converter");
         primaryStage.setWidth(400);
         primaryStage.setResizable(false);
         primaryStage.show();

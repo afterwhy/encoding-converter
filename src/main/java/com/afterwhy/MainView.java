@@ -5,12 +5,14 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
 import org.mozilla.universalchardet.UniversalDetector;
@@ -39,6 +41,9 @@ public class MainView extends VBox {
     private Button buttonBrowse;
     private Button buttonProceed;
 
+    private RadioButton radioButtonFolder;
+    private RadioButton radioButtonFile;
+
     private Executor executor = Executors.newSingleThreadExecutor();
 
     public MainView(Stage stage) {
@@ -48,10 +53,32 @@ public class MainView extends VBox {
         setPadding(new Insets(20.0));
         setOnKeyPressed(e -> {
             if (e.getCode() == KeyCode.ENTER) {
-                proceed();
+                convert();
             }
         });
         getChildren().addAll(
+                new HBox() {{
+                    setSpacing(10.0);
+                    setMaxWidth(Double.MAX_VALUE);
+                    ToggleGroup toggleGroup = new ToggleGroup();
+                    getChildren().addAll(
+                            radioButtonFolder = new RadioButton("Folder") {{
+                                setToggleGroup(toggleGroup);
+                                setSelected(true);
+                            }},
+                            radioButtonFile = new RadioButton("File") {{
+                                setToggleGroup(toggleGroup);
+                                setSelected(false);
+                            }}
+                    );
+
+                    toggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+                        boolean folder = newValue == radioButtonFolder;
+                        textFieldFolderPath.setText("");
+                        textFieldFolderPath.setPromptText(folder ? "Choose folder..." : "Choose file...");
+                        textFieldMask.setDisable(!folder);
+                    });
+                }},
                 new HBox() {{
                     setSpacing(10.0);
                     setMaxWidth(Double.MAX_VALUE);
@@ -101,29 +128,44 @@ public class MainView extends VBox {
                     setSelected(true);
                 }},
                 buttonProceed = new Button("Convert") {{
-                    setOnAction(MainView.this::handleProceed);
+                    setOnAction(MainView.this::handleConvert);
                 }}
         );
     }
 
     private void handleBrowse(ActionEvent event) {
-        DirectoryChooser directoryChooser = new DirectoryChooser();
-        directoryChooser.setTitle("Choose folder");
-        File file = directoryChooser.showDialog(stage);
+        boolean chooseFolder = radioButtonFolder.isSelected();
+        if (chooseFolder) {
+            DirectoryChooser directoryChooser = new DirectoryChooser();
+            directoryChooser.setTitle("Choose folder");
+            File file = directoryChooser.showDialog(stage);
 
-        if (file != null) {
-            textFieldFolderPath.setText(file.getAbsolutePath());
+            if (file != null) {
+                textFieldFolderPath.setText(file.getAbsolutePath());
+            }
+        } else {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Choose file");
+            fileChooser.setSelectedExtensionFilter(new FileChooser.ExtensionFilter("All files", "*.*"));
+            File file = fileChooser.showOpenDialog(stage);
+
+            if (file != null) {
+                textFieldFolderPath.setText(file.getAbsolutePath());
+            }
         }
     }
 
-    private void handleProceed(ActionEvent event) {
-        proceed();
+    private void handleConvert(ActionEvent event) {
+        convert();
     }
 
-    private void proceed() {
-        String folderPath = textFieldFolderPath.getText();
+    private void convert() {
+        boolean convertFolder = radioButtonFolder.isSelected();
 
-        if (folderPath.isEmpty() || !new File(folderPath).exists()) {
+        String path = textFieldFolderPath.getText();
+
+        File source = new File(path);
+        if (path.isEmpty() || !source.exists()) {
             return;
         }
 
@@ -134,7 +176,11 @@ public class MainView extends VBox {
 
         executor.execute(() -> {
             try {
-                proceedFolder(folderPath);
+                if (convertFolder) {
+                    convertFolder(source);
+                } else {
+                    convertFile(source);
+                }
 
                 Platform.runLater(() -> {
                     Alert successAlert = new Alert(Alert.AlertType.INFORMATION, "Everything successfully converted!", ButtonType.OK);
@@ -161,24 +207,23 @@ public class MainView extends VBox {
         });
     }
 
-    private void proceedFolder(String folderPath) throws IOException {
+    private void convertFolder(File folder) throws IOException {
         String mask = textFieldMask.getText();
-        Pattern pattern = Pattern.compile(mask.replace("*" ,".*").replace("?", "."));
+        Pattern pattern = Pattern.compile(mask.replace(".", "\\.").replace("*" ,".*").replace("?", "."));
 
-        File folder = new File(folderPath);
         File[] content = folder.listFiles(file -> file.isDirectory() || mask.isEmpty() || pattern.matcher(file.getName().toLowerCase()).matches());
         if (content != null) {
             for (File f : content) {
                 if (f.isDirectory()) {
-                    proceedFolder(f.getAbsolutePath());
+                    convertFolder(f);
                 } else {
-                    proceedFile(f);
+                    convertFile(f);
                 }
             }
         }
     }
 
-    private void proceedFile(File file) throws IOException {
+    private void convertFile(File file) throws IOException {
         Charset targetEncoding = comboBoxCharsets.getSelectionModel().getSelectedItem();
         boolean backup = checkBoxBackup.isSelected();
 
